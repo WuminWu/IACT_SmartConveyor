@@ -1,0 +1,16 @@
+2015-11-27 14:31:18,248 INFO  - Starting HiveMQ Server
+2015-11-27 14:31:18,258 INFO  - HiveMQ version: 3.0.2
+2015-11-27 14:31:18,258 INFO  - HiveMQ home directory: C:\Users\21313534\Desktop\hivemq-3.0.2
+2015-11-27 14:31:18,922 WARN  - Could not open/create prefs root node Software\JavaSoft\Prefs at root 0x80000002. Windows RegCreateKeyEx(...) returned error code 5.
+2015-11-27 14:31:22,478 INFO  - No valid license file found. Using evaluation license, restricted to 25 connections.
+2015-11-27 14:31:26,154 INFO  - The HiveMQ cluster ID is 667097aa-2d6e-42b9-8434-c7588c9b6d7d
+2015-11-27 14:31:26,549 INFO  - Loaded Plugin HiveMQ JMX Metrics Reporting Plugin - v3.0.0
+2015-11-27 14:31:26,549 INFO  - Loaded Plugin HiveMQ Sys Topic Plugin - v3.0.0
+2015-11-27 14:31:26,601 INFO  - JMX Metrics Reporting started.
+2015-11-27 14:31:26,601 INFO  - Starting TCP listener on address 0.0.0.0 and port 1883
+2015-11-27 14:31:26,761 INFO  - Started TCP Listener on address 0.0.0.0 and on port 1883
+2015-11-27 14:31:26,771 INFO  - Started HiveMQ in 8511ms
+2015-11-27 14:58:28,193 INFO  - Starting HiveMQ Server
+2015-11-27 14:58:28,203 INFO  - HiveMQ version: 3.0.2
+2015-11-27 14:58:28,203 INFO  - HiveMQ home directory: D:\Wumin Share Data\自動化專案\台北自動化專案\hivemq-3.0.2
+2015-11-27 14:58:28,453 WARN  - Could not open/create prefs root node Software\JavaSoft\Prefs at root 0x80000002. Windows RegCreateKeyEx(...) returned error code 5.
