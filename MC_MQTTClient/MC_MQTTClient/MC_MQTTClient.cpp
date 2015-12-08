@@ -14,10 +14,13 @@
 #define CLIENTID    "ExampleClientSub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Publish Msg from Host"
+#define Msg         "Publish Test from host"
+#define Msg2        "Republish Msg from host again"
 #define QOS         1
 #define TIMEOUT     10000L
 
 using namespace std;
+static int flag;
 /*
 A value representing an MQTT message. 
 A delivery token is returned to the client application when a message is published. 
@@ -35,21 +38,25 @@ void delivered(void *context, MQTTClient_deliveryToken dt)
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
-	int i;
-	//void* payloadptr;
-	char str[256] = { 0 };
+	char str[1024] = { 0 };
 
 	printf("Message arrived\n");
 	printf("topic: %s\n", topicName);
 	printf("message: ");
 
-	// Wumin : pointer void -> pointer char
-	// payloadptr = message->payload;
 	memcpy(str, message->payload, message->payloadlen);	
-	printf("Msg length = %d\n", message->payloadlen);
-	printf("Msg = %s\n", str);
+	//printf("Msg length = %d\n", message->payloadlen);
+	printf("Get Msg String = %s\n", str);
 
-	//int result = memcmp();
+	/* Compare Msg what you received, and according it to decide action items. */
+	int result = memcmp(str, Msg, sizeof(Msg));
+	if (result == 0)
+		flag = 1;
+	else
+		flag = -1;	
+	
+	printf("compare result = %d\n", result);
+	putchar('\n');
 
 	MQTTClient_freeMessage(&message);
 	MQTTClient_free(topicName);
@@ -82,11 +89,11 @@ void connlost(void *context, char *cause)
 
 int main(int argc, char* argv[])
 {
+	int rc;
+	int ch;
 	MQTTClient client;
 	//#define MQTTClient_connectOptions_initializer   { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0}
 	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-	int rc;
-	int ch;
 
 	//int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId, 
 	//						int persistence_type, void* persistence_context);
@@ -103,19 +110,32 @@ int main(int argc, char* argv[])
 		printf("Failed to connect, return code %d\n", rc);
 		exit(-1);
 	}
-	printf("Subscribing to topic %s\nfor client %s using QoS : %d\n\n"
-		"Press Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);
 	MQTTClient_subscribe(client, TOPIC, QOS);
 
 	/*Wumin: publish test*/
-	publishMsg(client, "Publish Test from host");
+	publishMsg(client, Msg);
 
+	while (true){
+		//printf("flag = %d\n", flag);
+		if (flag == 1){
+			printf("Get Msg\n");
+			publishMsg(client, Msg2);
+			flag = 0;
+		}else if (flag = -1){
+			//printf("Error\n");
+			flag = 0;
+			break;
+		}
+	}
+	/*
 	do
 	{
 		ch = getchar();
 	} while (ch != 'Q' && ch != 'q');
-
+	*/
 	MQTTClient_disconnect(client, 10000);
 	MQTTClient_destroy(&client);
+	putchar('\n');
+	system("pause");
 	return rc;
 }
