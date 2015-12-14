@@ -1,11 +1,10 @@
-﻿已經開始建置於 2015/12/8 下午 01:59:37。
+﻿已經開始建置於 2015/12/14 下午 05:13:23。
      1>節點 2 (Rebuild 目標) 上的專案 "C:\Users\21313534\Desktop\MC_MQTTClient\MC_MQTTClient\MC_MQTTClient.vcxproj"。
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yc"stdafx.h" /Fp"Debug\MC_MQTTClient.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt stdafx.cpp
          stdafx.cpp
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\MC_MQTTClient.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt MC_MQTTClient.cpp
          MC_MQTTClient.cpp
-     1>c:\users\21313534\desktop\mc_mqttclient\mc_mqttclient\mc_mqttclient.cpp(93): warning C4101: 'ch' : 未參考的區域變數
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\21313534\Desktop\MC_MQTTClient\Debug\MC_MQTTClient.exe" /INCREMENTAL /NOLOGO /LIBPATH:C:\Users\21313534\Desktop\MC_MQTTClient\MC_MQTTClient\\ kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib "paho-mqtt3c.lib" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Delayimp.lib /DELAYLOAD:"paho-mqtt3c.dll" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\21313534\Desktop\MC_MQTTClient\Debug\MC_MQTTClient.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\21313534\Desktop\MC_MQTTClient\Debug\MC_MQTTClient.lib" /MACHINE:X86 Debug\MC_MQTTClient.obj
          Debug\stdafx.obj
@@ -14,4 +13,4 @@
 
 建置成功。
 
-經過時間 00:00:01
+經過時間 00:00:02.12
