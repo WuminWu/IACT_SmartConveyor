@@ -91,6 +91,113 @@ void cbConvSensor_13()
 	set_PWM_OFF_PCA9685( i2c_pwm , CONV_MOTOR5 , 0x0 );
 }
 
+void rbpButtonInit(convSensor nPin, void (*function)(void))
+{
+	callbackFun[nPin] = function;
+	//wiringPiISR (nPin, INT_EDGE_RISING, (void *)isrHandler[nPin]) ;
+}
+
+int DoFalling( int num )
+{
+  int debounceTime =0;
+  static int button_cnt=0;
+	//printf ("\r\n");
+	while (digitalRead (num) == LOW){
+	   delay (10) ;
+	  // printf ("\r\npin %d:", digitalRead (1)) ;
+	  //printf ("L");
+	  if ( debounceTime++ > 20 ) {
+      // ++globalCounter [7] ;	  
+		callbackFun[num]();
+	//	printf ("nbutton %d,%d\r\n",num,++button_cnt);
+	//	fflush (stdout) ;
+	    break;
+	  }
+	} 
+  //++globalCounter [1] ; 
+  debounceTime =0;
+	while (digitalRead (num) == LOW) {//wait key release
+	   delay(10);
+	   if ( ++debounceTime > 50)
+		   break;
+	}
+	//printf ("H");
+	//fflush (stdout) ;
+}
+
+void BTN_1_Interrupt (void) 
+{
+	printf("BTN_1_Interrupt\n");
+	DoFalling(CONV_BUTTON1);
+}
+void BTN_2_Interrupt (void) 
+{
+	printf("BTN_2_Interrupt\n");
+	DoFalling(CONV_BUTTON2);
+}
+void BTN_3_Interrupt (void) 
+{
+	printf("BTN_3_Interrupt\n");
+	DoFalling(CONV_BUTTON3);
+}
+void BTN_4_Interrupt (void) 
+{
+	printf("BTN_4_Interrupt\n");
+	DoFalling(CONV_BUTTON4);
+}
+
+void rbpCylinderFn(int num,int *cyl_swt)
+{
+int cmd=0;
+
+	    switch ( num ) {
+		case 1:
+			cmd = CONV_CYLINDER1;
+     		     break;
+		case 2:
+			cmd = CONV_CYLINDER2;
+	    	     break;
+		case 3:
+			cmd = CONV_CYLINDER3;
+		     break;
+		case 4:
+	   	        cmd = CONV_CYLINDER4;
+	     	     break;
+		 default:
+			//conflag = false;
+		     break;
+	     }
+	     if(*cyl_swt){
+			rbpCylinder(cmd, ON);
+			*cyl_swt = 0;
+	     }else {
+			*cyl_swt=1;
+			rbpCylinder(cmd, OFF);
+	    }
+        	
+}
+void button1_event1(void)
+{
+	static int cyl_swt=1;
+    rbpCylinderFn(1,&cyl_swt);	
+}
+void button2_event1(void)
+{
+	static int cyl_swt=1;
+    rbpCylinderFn(2,&cyl_swt);	
+}
+void button3_event1(void)
+{
+	static int cyl_swt=1;
+	rbpCylinderFn(3,&cyl_swt);	
+}
+void button4_event1(void)
+{
+	static int cyl_swt=1;
+	rbpCylinderFn(4,&cyl_swt);	
+}
+
+
 int init_Conveyer()
 {	
 	if ((i2c_ext= wiringPiI2CSetup (0x20)) == -1 ) {
@@ -158,6 +265,19 @@ int init_Conveyer()
 	//Wumin
 	wiringPiISR (CONV_SENSOR13, INT_EDGE_RISING, &cbConvSensor_13);
 	//rbpSensor(CONV_SENSOR13, &cbConvSensor_13);
+	
+	// David's button call back
+	wiringPiISR (CONV_BUTTON1, INT_EDGE_FALLING, &BTN_1_Interrupt) ;
+	rbpButtonInit(CONV_BUTTON1,button1_event1);
+	
+	wiringPiISR (CONV_BUTTON2, INT_EDGE_FALLING, &BTN_2_Interrupt) ;
+	rbpButtonInit(CONV_BUTTON2,button2_event1);
+	
+	wiringPiISR (CONV_BUTTON3, INT_EDGE_FALLING, &BTN_3_Interrupt) ;
+	rbpButtonInit(CONV_BUTTON3,button3_event1);
+	
+	wiringPiISR (CONV_BUTTON4, INT_EDGE_FALLING, &BTN_4_Interrupt) ;
+	rbpButtonInit(CONV_BUTTON4,button4_event1);
 
 	return 0;
 }
