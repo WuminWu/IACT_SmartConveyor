@@ -760,7 +760,7 @@
             this.button60.Name = "button60";
             this.button60.Size = new System.Drawing.Size(123, 71);
             this.button60.TabIndex = 62;
-            this.button60.Text = "Test";
+            this.button60.Text = "Conv_Cross_Conv";
             this.button60.UseVisualStyleBackColor = true;
             this.button60.Click += new System.EventHandler(this.button60_Click);
             // 

@@ -17,12 +17,31 @@
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 
+int cylinder_delay = 2000;
+
 bool CVR_checkTopic(char *topicName, char *compare)
 {
 	if(strcmp(topicName, compare)==0)
 		return true;
 	else
 		return false;
+}
+
+void cbSensor_1_DoNothing()
+{
+	// Due to WiringPi can not remove Interrupt, so I point to cbSensor_1_DoNothing
+	// when we don't need it(cross device).
+	printf("cbSensor_1_DoNothing\n");
+}
+
+void cbConvSensor_PositionOneArrived()
+{
+	delay(50);
+	printf("cbConvSensor_PositionOneArrived\n");
+	//delay time about pallet at right position
+	delay(1500);
+	ConveyorMotorStop(CONV_MOTOR1);		
+	deinit_InterruptSensor_1(&cbSensor_1_DoNothing);
 }
 
 int CVR_DispatchNormal(unsigned int  *payload32, MC_Context_Struct *pMcContext)
@@ -164,10 +183,12 @@ int CVR_publishEvent(void *aPContext, unsigned int aPyload32)
 void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 {
 	unsigned int evtPayload32 = 0;
+	unsigned int destEvtPayload32 = 0;
 	int result = 0;
 	int computeTypeAndAction = ((*payload32 & BIT_MASK_ControlType_Action) >> SHIFT_ControlType_Action);
 	int computePosition = ((*payload32 & BIT_MASK_PALLET_POSITION) >> SHIFT_PALLET_POSITION);
-	printf("computeTypeAndAction = 0x%08x\n", computeTypeAndAction);
+	// determine if cross device or not
+	int computeFlag = ((*payload32 & BIT_MASK_CROSS_FLAG) >> SHIFT_CROSS_FLAG);
 
 	switch(computeTypeAndAction)
 	{
@@ -175,28 +196,106 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			printf("normalCmdParser : VALUE_CONVEYOR_MOVE_FORWARD\n");
 			if(computePosition==VALUE_POSITION1)
 			{				
-				rbpMotor(CONV_MOTOR1);
-				evtPayload32 = CVR_eventPayloadFormat(payload32);
-				result = CVR_publishEvent(aPContext, evtPayload32);	
-				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+				switch(computeFlag)
+				{
+					case VALUE_CROSS_FLAG_FALSE:
+						//have little delay in this func
+						rbpMotor(CONV_MOTOR1);						
+						do{
+							// read next position status
+							if(rbpSensorRead(CONV_SENSOR2))
+							{
+								//source
+								evtPayload32 = CVR_eventPayloadFormat(payload32);
+								result = CVR_publishEvent(aPContext, evtPayload32);	
+								printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+								
+								//destination
+								unsigned int position = ((*payload32 & BIT_MASK_PALLET_POSITION) >> SHIFT_PALLET_POSITION);
+								int payload32Mask = ((position >> 1) << SHIFT_PALLET_POSITION);                   
+								
+								// clear evtPayload32 position
+								destEvtPayload32 = 0xffffff87 & evtPayload32;
+								// Add new position
+								destEvtPayload32 = 0x000000a0 | destEvtPayload32 ;
+								result = CVR_publishEvent(aPContext, destEvtPayload32);	
+								printf("destEvtPayload32 = 0x%08x, and result = %d\n", destEvtPayload32, result);
+								break;
+							}
+						}while(1);
+						break;
+						
+					case VALUE_CROSS_FLAG_TRUE:
+						printf("Conv : Cross Flag = True");					
+												
+						// enable Sensor 1 Interrupt
+						init_InterruptSensor_1(&cbConvSensor_PositionOneArrived);
+						
+						ConveyorMotorMove(CONV_MOTOR1);
+						// publish event
+						evtPayload32 = CVR_eventPayloadFormat(payload32);
+						result = CVR_publishEvent(aPContext, evtPayload32);	
+						printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+						break;
+				}
 			}
 			else if(computePosition==VALUE_POSITION2)
 			{
 				rbpMotor(CONV_MOTOR2);
-				evtPayload32 = CVR_eventPayloadFormat(payload32);
-				result = CVR_publishEvent(aPContext, evtPayload32);	
-				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);				
+				// read next position status
+				do
+				{
+					if(rbpSensorRead(CONV_SENSOR3))
+					{
+						evtPayload32 = CVR_eventPayloadFormat(payload32);
+						result = CVR_publishEvent(aPContext, evtPayload32);	
+						printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+						
+						//destination
+						unsigned int position = ((*payload32 & BIT_MASK_PALLET_POSITION) >> SHIFT_PALLET_POSITION);
+						int payload32Mask = ((position >> 1) << SHIFT_PALLET_POSITION);
+						
+						// clear evtPayload32 position
+						destEvtPayload32 = 0xffffff87 & evtPayload32;
+						// Add new position
+						destEvtPayload32 = 0x00000090 | destEvtPayload32 ;
+						result = CVR_publishEvent(aPContext, destEvtPayload32);	
+						printf("destEvtPayload32 = 0x%08x, and result = %d\n", destEvtPayload32, result);				
+						break;
+					}
+				}while(1);			
 			}
 			else if(computePosition==VALUE_POSITION3)
 			{
 				rbpMotor(CONV_MOTOR3);
-				evtPayload32 = CVR_eventPayloadFormat(payload32);
-				result = CVR_publishEvent(aPContext, evtPayload32);	
-				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);				
+				// read next position status
+				do
+				{
+					if(rbpSensorRead(CONV_SENSOR4))
+					{
+						evtPayload32 = CVR_eventPayloadFormat(payload32);
+						result = CVR_publishEvent(aPContext, evtPayload32);	
+						printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+						
+						//destination
+						unsigned int position = ((*payload32 & BIT_MASK_PALLET_POSITION) >> SHIFT_PALLET_POSITION);
+						int payload32Mask = ((position >> 1) << SHIFT_PALLET_POSITION);
+						
+						// clear evtPayload32 position
+						destEvtPayload32 = 0xffffff87 & evtPayload32;
+						// Add new position
+						destEvtPayload32 = 0x00000088 | destEvtPayload32 ;
+						result = CVR_publishEvent(aPContext, destEvtPayload32);	
+						printf("destEvtPayload32 = 0x%08x, and result = %d\n", destEvtPayload32, result);
+						break;
+					}
+				}while(1);				
 			}
 			else if(computePosition==VALUE_POSITION4)
 			{
 				rbpMotor(CONV_MOTOR4);
+				// cross device, so make motor stop when time's up
+				delay(3000);
 				evtPayload32 = CVR_eventPayloadFormat(payload32);
 				result = CVR_publishEvent(aPContext, evtPayload32);	
 				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);				
@@ -207,6 +306,7 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			if(computePosition==VALUE_POSITION1)
 			{
 				rbpCylinder(CONV_CYLINDER1, ON);
+				delay(cylinder_delay);
 				evtPayload32 = CVR_eventPayloadFormat(payload32);
 				result = CVR_publishEvent(aPContext, evtPayload32);	
 				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
@@ -214,6 +314,7 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			else if(computePosition==VALUE_POSITION2)
 			{
 				rbpCylinder(CONV_CYLINDER2, ON);
+				delay(cylinder_delay);
 				evtPayload32 = CVR_eventPayloadFormat(payload32);
 				result = CVR_publishEvent(aPContext, evtPayload32);	
 				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
@@ -221,6 +322,7 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			else if(computePosition==VALUE_POSITION3)
 			{
 				rbpCylinder(CONV_CYLINDER3, ON);
+				delay(cylinder_delay);
 				evtPayload32 = CVR_eventPayloadFormat(payload32);
 				result = CVR_publishEvent(aPContext, evtPayload32);	
 				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
@@ -228,6 +330,7 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			else if(computePosition==VALUE_POSITION4)
 			{
 				rbpCylinder(CONV_CYLINDER4, ON);
+				delay(cylinder_delay);
 				evtPayload32 = CVR_eventPayloadFormat(payload32);
 				result = CVR_publishEvent(aPContext, evtPayload32);	
 				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
@@ -238,6 +341,7 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			if(computePosition==VALUE_POSITION1)
 			{
 				rbpCylinder(CONV_CYLINDER1, OFF);
+				delay(cylinder_delay);
 				evtPayload32 = CVR_eventPayloadFormat(payload32);
 				result = CVR_publishEvent(aPContext, evtPayload32);	
 				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
@@ -245,6 +349,7 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			else if(computePosition==VALUE_POSITION2)
 			{
 				rbpCylinder(CONV_CYLINDER2, OFF);
+				delay(cylinder_delay);
 				evtPayload32 = CVR_eventPayloadFormat(payload32);
 				result = CVR_publishEvent(aPContext, evtPayload32);	
 				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
@@ -252,6 +357,7 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			else if(computePosition==VALUE_POSITION3)
 			{
 				rbpCylinder(CONV_CYLINDER3, OFF);
+				delay(cylinder_delay);
 				evtPayload32 = CVR_eventPayloadFormat(payload32);
 				result = CVR_publishEvent(aPContext, evtPayload32);	
 				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
@@ -259,6 +365,7 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			else if(computePosition==VALUE_POSITION4)
 			{
 				rbpCylinder(CONV_CYLINDER4, OFF);
+				delay(cylinder_delay);
 				evtPayload32 = CVR_eventPayloadFormat(payload32);
 				result = CVR_publishEvent(aPContext, evtPayload32);	
 				printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
@@ -368,33 +475,33 @@ int CVR_DispatchDiag(unsigned int *payload32, MC_Context_Struct *pMcContext)
 		case VALUE_READ_CONVEYOR_SENSOR :
 			printf("DispatchDiag : VALUE_SENSOR_MODE\n");
 			if(computePosition==VALUE_SENSOR1)
-				printf("VALUE_SENSOR_MODE : Sensor 1 = %d\n", rbpSensorRead(VALUE_SENSOR1));
+				printf("VALUE_SENSOR_MODE : Sensor 1 = %d\n", rbpSensorRead(CONV_SENSOR1));
 			else if(computePosition==VALUE_SENSOR2)
-				printf("VALUE_SENSOR_MODE : Sensor 2 = %d\n", rbpSensorRead(VALUE_SENSOR2));
+				printf("VALUE_SENSOR_MODE : Sensor 2 = %d\n", rbpSensorRead(CONV_SENSOR2));
 			else if(computePosition==VALUE_SENSOR3)
-				printf("VALUE_SENSOR_MODE : Sensor 3 = %d\n", rbpSensorRead(VALUE_SENSOR3));
+				printf("VALUE_SENSOR_MODE : Sensor 3 = %d\n", rbpSensorRead(CONV_SENSOR3));
 			else if(computePosition==VALUE_SENSOR4)
-				printf("VALUE_SENSOR_MODE : Sensor 4 = %d\n", rbpSensorRead(VALUE_SENSOR4));
+				printf("VALUE_SENSOR_MODE : Sensor 4 = %d\n", rbpSensorRead(CONV_SENSOR4));
 			else if(computePosition==VALUE_SENSOR5)
-				printf("VALUE_SENSOR_MODE : Sensor 5 = %d\n", rbpSensorRead(VALUE_SENSOR5));
+				printf("VALUE_SENSOR_MODE : Sensor 5 = %d\n", rbpSensorRead(CONV_SENSOR5));
 			else if(computePosition==VALUE_SENSOR6)
-				printf("VALUE_SENSOR_MODE : Sensor 6 = %d\n", rbpSensorRead(VALUE_SENSOR6));
+				printf("VALUE_SENSOR_MODE : Sensor 6 = %d\n", rbpSensorRead(CONV_SENSOR6));
 			else if(computePosition==VALUE_SENSOR7)
-				printf("VALUE_SENSOR_MODE : Sensor 7 = %d\n", rbpSensorRead(VALUE_SENSOR7));
+				printf("VALUE_SENSOR_MODE : Sensor 7 = %d\n", rbpSensorRead(CONV_SENSOR7));
 			else if(computePosition==VALUE_SENSOR8)
-				printf("VALUE_SENSOR_MODE : Sensor 8 = %d\n", rbpSensorRead(VALUE_SENSOR8));
+				printf("VALUE_SENSOR_MODE : Sensor 8 = %d\n", rbpSensorRead(CONV_SENSOR8));
 			else if(computePosition==VALUE_SENSOR9)
-				printf("VALUE_SENSOR_MODE : Sensor 9 = %d\n", rbpSensorRead(VALUE_SENSOR9));
+				printf("VALUE_SENSOR_MODE : Sensor 9 = %d\n", rbpSensorRead(CONV_SENSOR9));
 			else if(computePosition==VALUE_SENSOR10)
-				printf("VALUE_SENSOR_MODE : Sensor 10 = %d\n", rbpSensorRead(VALUE_SENSOR10));
+				printf("VALUE_SENSOR_MODE : Sensor 10 = %d\n", rbpSensorRead(CONV_SENSOR10));
 			else if(computePosition==VALUE_SENSOR11)
-				printf("VALUE_SENSOR_MODE : Sensor 11 = %d\n", rbpSensorRead(VALUE_SENSOR11));
+				printf("VALUE_SENSOR_MODE : Sensor 11 = %d\n", rbpSensorRead(CONV_SENSOR11));
 			else if(computePosition==VALUE_SENSOR12)
-				printf("VALUE_SENSOR_MODE : Sensor 12 = %d\n", rbpSensorRead(VALUE_SENSOR12));
+				printf("VALUE_SENSOR_MODE : Sensor 12 = %d\n", rbpSensorRead(CONV_SENSOR12));
 			else if(computePosition==VALUE_SENSOR13)
-				printf("VALUE_SENSOR_MODE : Sensor 13 = %d\n", rbpSensorRead(VALUE_SENSOR13));
+				printf("VALUE_SENSOR_MODE : Sensor 13 = %d\n", rbpSensorRead(CONV_SENSOR13));
 			else if(computePosition==VALUE_SENSOR14)
-				printf("VALUE_SENSOR_MODE : Sensor 14 = %d\n", rbpSensorRead(VALUE_SENSOR14));				
+				printf("VALUE_SENSOR_MODE : Sensor 14 = %d\n", rbpSensorRead(CONV_SENSOR14));				
 		default : 
 			break;
 	}

@@ -87,7 +87,7 @@ void cbConvSensor_13()
 {
 	delay(50);
 	printf("cbSensor 13\n");
-	delay(6000);
+	delay(4000);
 	set_PWM_OFF_PCA9685( i2c_pwm , CONV_MOTOR5 , 0x0 );
 }
 
@@ -197,6 +197,17 @@ void button4_event1(void)
 	rbpCylinderFn(4,&cyl_swt);	
 }
 
+void init_InterruptSensor_1(void (*pf)(void))
+{
+	printf("init_InterruptSensor_1\n");
+	wiringPiISR (CONV_SENSOR1, INT_EDGE_RISING, pf);
+}
+
+void deinit_InterruptSensor_1(void (*pf)(void))
+{
+	printf("deinit_InterruptSensor_1\n");
+	wiringPiISR (CONV_SENSOR1, INT_EDGE_SETUP, pf);
+}
 
 int init_Conveyer()
 {	
@@ -262,9 +273,8 @@ int init_Conveyer()
 	ISR_HANDLER_R(CONV_SENSOR14);
 
 	mode = MODE_CONV;
-	//Wumin
+	//Wumin : Bot Conveyor interrupt stop
 	wiringPiISR (CONV_SENSOR13, INT_EDGE_RISING, &cbConvSensor_13);
-	//rbpSensor(CONV_SENSOR13, &cbConvSensor_13);
 	
 	// David's button call back
 	wiringPiISR (CONV_BUTTON1, INT_EDGE_FALLING, &BTN_1_Interrupt) ;
@@ -339,7 +349,7 @@ int init_Elevator()
 		return -1;
 	}
 
-	init_PCA9685( i2c_pwm, CONV_SPEED3 );
+	init_PCA9685( i2c_pwm, CONV_SPEED1 );
 	wiringPiSetup () ;
 
 	pinMode (ELEV_MOTOR3, PWM_OUTPUT) ;

@@ -149,27 +149,35 @@ void ELV_normalCmdParser(void *aPContext, unsigned int *payload32)
 	{
 		case VALUE_ELEV_UP:
 			rbpElevator_UpDown(UP);
-			evtPayload32 = ELV_eventPayloadFormat(payload32);
-			result = ELV_publishEvent(aPContext, evtPayload32);	
-			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);			
-			break;
+			printf("rbpSensorRead(ELEV_SEN_ELE_H) = %d\n", rbpSensorRead(ELEV_SEN_ELE_H));
+			while(1)
+			{
+				if(rbpSensorRead(ELEV_SEN_ELE_H))
+				{
+					evtPayload32 = ELV_eventPayloadFormat(payload32);
+					result = ELV_publishEvent(aPContext, evtPayload32);	
+					printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+					break;
+				}
+			}
+			break;			
 		case VALUE_ELEV_DOWN:
 			rbpElevator_UpDown(DOWN);
-			evtPayload32 = ELV_eventPayloadFormat(payload32);
-			result = ELV_publishEvent(aPContext, evtPayload32);	
-			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);	
+			printf("rbpSensorRead(ELEV_SEN_ELE_L) = %d\n", rbpSensorRead(ELEV_SEN_ELE_L));
+			while(1)
+			{
+				if(rbpSensorRead(ELEV_SEN_ELE_L))
+				{
+					evtPayload32 = ELV_eventPayloadFormat(payload32);
+					result = ELV_publishEvent(aPContext, evtPayload32);	
+					printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+					break;
+				}
+			}
 			break;
-		case VALUE_ELEV_TOP_MOTOR_FORWARD:
-			ElevatorMotorMove(ELEV_MOTOR1, ELEV_MOTOR_DIR1, FORWARD);
-			evtPayload32 = ELV_eventPayloadFormat(payload32);
-			result = ELV_publishEvent(aPContext, evtPayload32);	
-			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);			
+		case VALUE_ELEV_TOP_MOTOR_FORWARD:		
 			break;
 		case VALUE_ELEV_TOP_MOTOR_REVERSE:
-			ElevatorMotorMove(ELEV_MOTOR1, ELEV_MOTOR_DIR1, BACKWARD);
-			evtPayload32 = ELV_eventPayloadFormat(payload32);
-			result = ELV_publishEvent(aPContext, evtPayload32);	
-			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);	
 			break;
 		case VALUE_ELEV_TOP_MOTOR_STOP:
 			ElevatorMotorStop(ELEV_MOTOR1);
@@ -180,7 +188,7 @@ void ELV_normalCmdParser(void *aPContext, unsigned int *payload32)
 			result = ELV_publishEvent(aPContext, evtPayload32);	
 			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
 			// Motor stop when time's up
-			delay(8000);
+			delay(6000);
 			ElevatorMotorStop(ELEV_MOTOR2);
 			break;
 		case VALUE_ELEV_BOT_MOTOR_REVERSE:
@@ -189,7 +197,7 @@ void ELV_normalCmdParser(void *aPContext, unsigned int *payload32)
 			result = ELV_publishEvent(aPContext, evtPayload32);	
 			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);	
 			// Motor stop when time's up
-			delay(8000);
+			delay(6000);
 			ElevatorMotorStop(ELEV_MOTOR2);
 			break;
 		case VALUE_ELEV_BOT_MOTOR_STOP:

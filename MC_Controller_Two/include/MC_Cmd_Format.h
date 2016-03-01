@@ -68,6 +68,8 @@
 /* ======Cross Flag===== */
 #define SHIFT_CROSS_FLAG 9
 #define BIT_MASK_CROSS_FLAG (0x01 << SHIFT_CROSS_FLAG)
+#define VALUE_CROSS_FLAG_TRUE 1
+#define VALUE_CROSS_FLAG_FALSE 0
 
 /* ======State Machine Before===== */
 #define SHIFT_STATE_MACHINE_BEFORE 5
