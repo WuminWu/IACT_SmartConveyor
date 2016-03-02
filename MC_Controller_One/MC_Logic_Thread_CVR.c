@@ -18,6 +18,7 @@
 #include <wiringPiI2C.h>
 
 int cylinder_delay = 2000;
+static bool gbPosiOneReady = false;
 
 bool CVR_checkTopic(char *topicName, char *compare)
 {
@@ -38,8 +39,10 @@ void cbConvSensor_PositionOneArrived()
 {
 	delay(50);
 	printf("cbConvSensor_PositionOneArrived\n");
+	//delay time about pallet at right position
 	delay(1600);
-	ConveyorMotorStop(CONV_MOTOR1);		
+	ConveyorMotorStop(CONV_MOTOR1);	
+	gbPosiOneReady = true;	
 	deinit_InterruptSensor_1(&cbSensor_1_DoNothing);
 }
 
@@ -87,7 +90,7 @@ int CVR_DispatchNormal(unsigned int  *payload32, MC_Context_Struct *pMcContext)
 unsigned int CVR_eventPayloadFormat(unsigned int *aMsg32)
 {
 	unsigned int eventPayload32 = 0;
-	unsigned int destEventPayload32 = 0;
+	// event payload format
 	unsigned int moduleType = 0;
 	unsigned int eventModuleID = MUDULE_ID;
 	unsigned int sid = 0;
@@ -225,16 +228,23 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 						break;
 						
 					case VALUE_CROSS_FLAG_TRUE:
-						printf("Conv : Cross Flag = True\n");
-						
-						init_InterruptSensor_1(&cbConvSensor_PositionOneArrived);
-						
+						printf("Conv : Cross Flag = True\n");																
+						// enable Sensor 1 Interrupt
+						init_InterruptSensor_1(&cbConvSensor_PositionOneArrived);					
 						ConveyorMotorMove(CONV_MOTOR1);
-						// publish event
-						evtPayload32 = CVR_eventPayloadFormat(payload32);
-						result = CVR_publishEvent(aPContext, evtPayload32);	
-						printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
-						break;
+						do
+						{
+							if(gbPosiOneReady)
+							{
+								// publish event
+								evtPayload32 = CVR_eventPayloadFormat(payload32);
+								result = CVR_publishEvent(aPContext, evtPayload32);	
+								printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+								gbPosiOneReady = false;
+								break;
+							}
+						}while(1);
+					break;
 				}
 			}
 			else if(computePosition==VALUE_POSITION2)
@@ -621,6 +631,15 @@ void CVR_MC_Sensor_Key_Detected_Thread(void *pContext )
 	printf("MC_Sensor_Key_Detected_Thread_CVR---\n");
 }
 
+unsigned int getInitPalletStatus()
+{
+	unsigned int position = ((rbpSensorRead(CONV_SENSOR1))<<3) |
+							((rbpSensorRead(CONV_SENSOR2))<<2) |
+							((rbpSensorRead(CONV_SENSOR3))<<1) |
+							((rbpSensorRead(CONV_SENSOR4))<<0) ;
+	return position;
+}
+
 void CVR_MC_CMD_Dispatch_Thread(void *pContext)
 {
 	printf("MC_CMD_Dispatch_Thread_CVR+++\n");
@@ -638,10 +657,10 @@ void CVR_MC_CMD_Dispatch_Thread(void *pContext)
 		int i;
 		
         /* receive the message */
+		printf("Msg Recieved in MC_CMD_Dispatch_Thread\n");
         bytes_read = mq_receive(pMcContext->mqueueServerArray[MQUEUE_RECEIVER_THREAD_NUM], buffer, MAX_SIZE, NULL);
 		if(bytes_read != sizeof(msg))
 			printf("MC_CMD_Dispatch_Thread : ERROR : mq_receive Failed, bytes_read = %d\n", bytes_read);
-		printf("Msg Recieved in MC_CMD_Dispatch_Thread\n");
 		memcpy(&msg, buffer, sizeof(msg));
 		
 		if(CVR_checkTopic(msg.topicName, SUBSCRIBE_TOPIC_FROM_SCC_INIT))
@@ -649,7 +668,10 @@ void CVR_MC_CMD_Dispatch_Thread(void *pContext)
 			printf("MC_CMD_Dispatch_Thread : mq_receive : Topic = %s\n", msg.topicName);
 			char *ip = "192.168.1.12,C";
 			int rc = publishMsg(*(pMcContext->pClient), PUBLISH_TOPIC_INIT, ip, strlen(ip));
-			printf("INIT : rc = %d\n", rc);
+			if(rc==0)
+				printf("INIT : publishMsg Success from %s\n", ip);
+			else
+				printf("INIT : publishMsg FAILEDfrom %s\n", ip);
 		}
 		else if(CVR_checkTopic(msg.topicName, SUBSCRIBE_TOPIC_SELF_IP))
 		{
@@ -678,13 +700,6 @@ void CVR_MC_CMD_Dispatch_Thread(void *pContext)
 			}
 		}
 		memcpy(buffer, msg.message->payload, msg.message->payloadlen);
-/*
-		for(i=3; i>=0; i--)		
-			printf("msg.payload = 0x%02x\n",buffer[i]);
-*/
-
-		//for(i=3; i>=0; i--)
-		//	printf("mq_receive : buffer[%d] = 0x%02x\n", i, buffer[i]);
 
 	}while(!pMcContext -> bThread_exit[6]);
 	printf("MC_CMD_Dispatch_Thread_CVR---\n");	

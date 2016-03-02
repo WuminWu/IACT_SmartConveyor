@@ -669,7 +669,8 @@ void ConveyorMotorStop(int nPin)
 
 void ElevatorMotorMove(int nPin, int ELEV_MOTOR_DIR, int dir)
 {
-	digitalWrite (ELEV_MOTOR_DIR, dir) ;		
+	//digitalWrite (ELEV_MOTOR_DIR, dir) ;	
+	digitalWrite (ELEV_MOTOR_DIR3, DOWN) ;	
 	set_PWM_OFF_PCA9685( i2c_pwm , nPin , 0x0800 );
 }
 

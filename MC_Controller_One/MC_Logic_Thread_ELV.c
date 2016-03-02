@@ -182,6 +182,7 @@ void ELV_normalCmdParser(void *aPContext, unsigned int *payload32)
 		case VALUE_ELEV_TOP_MOTOR_STOP:
 			break;
 		case VALUE_ELEV_BOT_MOTOR_FORWARD:
+			printf("Here is VALUE_ELEV_BOT_MOTOR_FORWARD\n");
 			ElevatorMotorMove(ELEV_MOTOR2, ELEV_MOTOR_DIR2, FORWARD);
 			// Motor stop when time's up
 			delay(6000);
@@ -191,6 +192,7 @@ void ELV_normalCmdParser(void *aPContext, unsigned int *payload32)
 			ElevatorMotorStop(ELEV_MOTOR2);
 			break;
 		case VALUE_ELEV_BOT_MOTOR_REVERSE:
+			printf("Here is VALUE_ELEV_BOT_MOTOR_REVERSE\n");
 			ElevatorMotorMove(ELEV_MOTOR2, ELEV_MOTOR_DIR2, BACKWARD);
 			// Motor stop when time's up
 			delay(6000);
@@ -317,7 +319,6 @@ void ELV_MC_CMD_Dispatch_Thread(void *pContext)
 		int i;
 		
         /* receive the message */
-		printf("Prepare to receive mqueue\n");
         bytes_read = mq_receive(pMcContext->mqueueServerArray[MQUEUE_RECEIVER_THREAD_NUM], buffer, MAX_SIZE, NULL);
 		if(bytes_read != sizeof(msg))
 			printf("MC_CMD_Dispatch_Thread : ERROR : mq_receive Failed, bytes_read = %d\n", bytes_read);

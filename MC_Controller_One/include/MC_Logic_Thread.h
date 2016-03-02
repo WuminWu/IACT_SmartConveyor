@@ -16,6 +16,7 @@
 	void CVR_MC_Sensor_Key_Detected_Thread( void *pContext );
 	void CVR_MC_CMD_Dispatch_Thread(void *pContext);
 	void cbConvSensor_PositionOneArrived();
+	unsigned int initPalletStatus();
 #endif
 //#elif defined ELEVATOR_MODULE
 #ifdef ELEVATOR_MODULE

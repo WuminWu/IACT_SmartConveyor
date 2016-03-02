@@ -9,6 +9,7 @@
 #include "include/MC_MqttClient.h"
 #include "include/MC_Logic_Thread.h"
 #include "include/MC_Cmd_Format.h"
+#include <stdbool.h>
 // WiringPi
 #include "hardware/rbpIac.h"
 #include "include/common.h"
@@ -18,6 +19,7 @@
 #include <wiringPiI2C.h>
 
 int cylinder_delay = 2000;
+static bool gbPosiOneReady = false;
 
 bool CVR_checkTopic(char *topicName, char *compare)
 {
@@ -40,8 +42,10 @@ void cbConvSensor_PositionOneArrived()
 	printf("cbConvSensor_PositionOneArrived\n");
 	//delay time about pallet at right position
 	delay(1500);
-	ConveyorMotorStop(CONV_MOTOR1);		
+	ConveyorMotorStop(CONV_MOTOR1);
+	gbPosiOneReady = true;
 	deinit_InterruptSensor_1(&cbSensor_1_DoNothing);
+	
 }
 
 int CVR_DispatchNormal(unsigned int  *payload32, MC_Context_Struct *pMcContext)
@@ -223,20 +227,26 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 								break;
 							}
 						}while(1);
-						break;
+					break;
 						
 					case VALUE_CROSS_FLAG_TRUE:
-						printf("Conv : Cross Flag = True");					
-												
+						printf("Conv : Cross Flag = True\n");																
 						// enable Sensor 1 Interrupt
-						init_InterruptSensor_1(&cbConvSensor_PositionOneArrived);
-						
+						init_InterruptSensor_1(&cbConvSensor_PositionOneArrived);					
 						ConveyorMotorMove(CONV_MOTOR1);
-						// publish event
-						evtPayload32 = CVR_eventPayloadFormat(payload32);
-						result = CVR_publishEvent(aPContext, evtPayload32);	
-						printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
-						break;
+						do
+						{
+							if(gbPosiOneReady)
+							{
+								// publish event
+								evtPayload32 = CVR_eventPayloadFormat(payload32);
+								result = CVR_publishEvent(aPContext, evtPayload32);	
+								printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+								gbPosiOneReady = false;
+								break;
+							}
+						}while(1);
+					break;
 				}
 			}
 			else if(computePosition==VALUE_POSITION2)
