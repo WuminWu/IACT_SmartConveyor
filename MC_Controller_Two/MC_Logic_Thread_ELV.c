@@ -160,7 +160,7 @@ void ELV_normalCmdParser(void *aPContext, unsigned int *payload32)
 					break;
 				}
 			}
-			break;			
+			break;
 		case VALUE_ELEV_DOWN:
 			rbpElevator_UpDown(DOWN);
 			printf("rbpSensorRead(ELEV_SEN_ELE_L) = %d\n", rbpSensorRead(ELEV_SEN_ELE_L));
@@ -180,24 +180,25 @@ void ELV_normalCmdParser(void *aPContext, unsigned int *payload32)
 		case VALUE_ELEV_TOP_MOTOR_REVERSE:
 			break;
 		case VALUE_ELEV_TOP_MOTOR_STOP:
-			ElevatorMotorStop(ELEV_MOTOR1);
 			break;
 		case VALUE_ELEV_BOT_MOTOR_FORWARD:
+			printf("Here is VALUE_ELEV_BOT_MOTOR_FORWARD\n");
 			ElevatorMotorMove(ELEV_MOTOR2, ELEV_MOTOR_DIR2, FORWARD);
+			// Motor stop when time's up
+			delay(6000);
 			evtPayload32 = ELV_eventPayloadFormat(payload32);
 			result = ELV_publishEvent(aPContext, evtPayload32);	
 			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
-			// Motor stop when time's up
-			delay(6000);
 			ElevatorMotorStop(ELEV_MOTOR2);
 			break;
 		case VALUE_ELEV_BOT_MOTOR_REVERSE:
+			printf("Here is VALUE_ELEV_BOT_MOTOR_REVERSE\n");
 			ElevatorMotorMove(ELEV_MOTOR2, ELEV_MOTOR_DIR2, BACKWARD);
+			// Motor stop when time's up
+			delay(6000);
 			evtPayload32 = ELV_eventPayloadFormat(payload32);
 			result = ELV_publishEvent(aPContext, evtPayload32);	
 			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);	
-			// Motor stop when time's up
-			delay(6000);
 			ElevatorMotorStop(ELEV_MOTOR2);
 			break;
 		case VALUE_ELEV_BOT_MOTOR_STOP:
@@ -301,11 +302,36 @@ void ELV_MC_Sensor_Key_Detected_Thread(void *pContext )
 	printf("MC_Sensor_Key_Detected_Thread_ELV---\n");
 }
 
+unsigned int ELV_getInitPalletStatus()
+{
+	unsigned int position = (rbpSensorRead(ELEV_SENSOR2)<<0) ;
+	return position;
+}
+
+unsigned int ELV_getPalletStatsusEventPayloadFormat(unsigned int *aMsg32)
+{		
+	unsigned int computePosition = ELV_getInitPalletStatus();
+	unsigned int computeSID = ((*aMsg32 & BIT_MASK_SEQUENCE_ID) >> SHIFT_SEQUENCE_ID);
+
+	unsigned int NA = 0 << SHIFT_NA;
+	unsigned int eventPosition = computePosition << SHIFT_POSITION;
+	unsigned int NA_offset_7 = 0 << SHIFT_ACTION_DONE;
+	unsigned int eventType = EVT_GetPalletStatus << SHIFT_EVENT_TYPE;
+	unsigned int sid = computeSID << SHIFT_SID;
+	unsigned int eventModuleID = MUDULE_ID << SHIFT_MODULE_ID;
+	unsigned int moduleType = VALUE_MODULE_ELEVATOR_TYPE << SHIFT_MODULE_TYPE;		
+	unsigned int eventPayload32 = moduleType | eventModuleID |sid | eventType | NA_offset_7 | eventPosition |NA;
+	printf("CVR_getPalletStatsusEventPayloadFormat : eventPayload32 = 0x%08x\n", eventPayload32);
+
+	return eventPayload32;
+}
+
 void ELV_MC_CMD_Dispatch_Thread(void *pContext)
 {
 	printf("MC_CMD_Dispatch_Thread_ELV+++\n");
 	char buffer[CMD_BUFFER_SIZE]; 
 	MC_Context_Struct *pMcContext = (MC_Context_Struct *)pContext;
+	
 	struct mqttMsg
 	{
 		char *topicName;
@@ -318,11 +344,12 @@ void ELV_MC_CMD_Dispatch_Thread(void *pContext)
 		int i;
 		
         /* receive the message */
-		printf("Prepare to receive mqueue\n");
+		printf("\n\n");
         bytes_read = mq_receive(pMcContext->mqueueServerArray[MQUEUE_RECEIVER_THREAD_NUM], buffer, MAX_SIZE, NULL);
 		if(bytes_read != sizeof(msg))
 			printf("MC_CMD_Dispatch_Thread : ERROR : mq_receive Failed, bytes_read = %d\n", bytes_read);
-		printf("Msg Recieved in MC_CMD_Dispatch_Thread_ELV\n");
+		printf("====Msg Recieved in MC_CMD_Dispatch_Thread_ELV====\n");
+		// copy structure from source mq_send
 		memcpy(&msg, buffer, sizeof(msg));
 		
 		if(ELV_checkTopic(msg.topicName, SUBSCRIBE_TOPIC_FROM_SCC_INIT))
@@ -340,9 +367,10 @@ void ELV_MC_CMD_Dispatch_Thread(void *pContext)
 				printf("ERROR : payloadlen error\n");
 				return;
 			}
-			int compute = ((*payload32 & BIT_MASK_MODE) >> SHIFT_MODE);
-			printf("compute = %d\n", compute);
-			switch(compute)
+			
+			int computeMode = ((*payload32 & BIT_MASK_MODE) >> SHIFT_MODE);
+			int computeControlType = ((*payload32 & BIT_MASK_ControlType) >> SHIFT_ControlType);
+			switch(computeMode)
 			{
 				case VALUE_MODE_DIAG : 
 					pMcContext->mode = 1;
@@ -352,13 +380,20 @@ void ELV_MC_CMD_Dispatch_Thread(void *pContext)
 				case VALUE_MODE_NORMAL : 
 					pMcContext->mode = 0;
 					printf("Here is Normal Mode\n");
-					ELV_DispatchThread(msg.message->payload, pMcContext);
+					if(computeControlType==VALUE_CONV_GET_PALLET_STATUS)
+						ELV_getPalletStatsusEventPayloadFormat(payload32);
+					else
+						ELV_DispatchThread(msg.message->payload, pMcContext);
 					break;
 				default : 
 					break;
 			}
 		}
+/*
 		memcpy(buffer, msg.message->payload, msg.message->payloadlen);
+		for(i=3; i>=0; i--)		
+			printf("msg.payload = 0x%02x\n",buffer[i]);
+*/
 
 	}while(!pMcContext -> bThread_exit[2]);
 	printf("MC_CMD_Dispatch_Thread_ELV---\n");	

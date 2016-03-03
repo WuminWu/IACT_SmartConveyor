@@ -27,6 +27,8 @@ namespace MqttClient_HMI
         const string SUBSCRIBE_TOPIC_SEQ01_INIT = "SCC->MC:INIT";
         const string PUBLISH_MC_CONV_IP = "192.168.1.12";
         const string PUBLISH_MC_ELEV_IP = "192.168.1.11";
+        const string PUBLISH_MC_CONV2_IP = "192.168.1.13";
+        const string PUBLISH_MC_ELEV2_IP = "192.168.1.14";
         const string PAYLOAD_respOK = "OK";
         const string PAYLOAD_respError = "Error";
         static MqttClient client = new MqttClient(IPAddress.Parse(ipAddress));
@@ -557,6 +559,32 @@ namespace MqttClient_HMI
 
             byte[] Msg2 = new byte[] { (byte)0x00, (byte)0x86, (byte)0x11, (byte)0x00 };
             ushort publishMsg2 = client.Publish(PUBLISH_MC_CONV_IP, Msg2);
+        }
+
+        private void button61_Click(object sender, EventArgs e)
+        {
+            //Elev 1
+            byte[] Msg3 = new byte[] { (byte)0x00, (byte)0x00, (byte)0x50, (byte)0x00 };
+            ushort publishMsg3 = client.Publish(PUBLISH_MC_ELEV_IP, Msg3);
+
+            Thread.Sleep(500);
+
+            //Conv 1
+            byte[] Msg = new byte[] { (byte)0x00, (byte)0x00, (byte)0x50, (byte)0x00 };
+            ushort publishMsg = client.Publish(PUBLISH_MC_CONV_IP, Msg);
+            
+            Thread.Sleep(500);
+
+            //Conv 2
+            byte[] Msg2 = new byte[] { (byte)0x00, (byte)0x00, (byte)0x50, (byte)0x00 };
+            ushort publishMsg2 = client.Publish(PUBLISH_MC_CONV2_IP, Msg2);
+
+            Thread.Sleep(500);
+
+            //Elev 2
+            byte[] Msg4 = new byte[] { (byte)0x00, (byte)0x00, (byte)0x50, (byte)0x00 };
+            ushort publishMsg4 = client.Publish(PUBLISH_MC_ELEV2_IP, Msg4);
+
         }
     }
 }

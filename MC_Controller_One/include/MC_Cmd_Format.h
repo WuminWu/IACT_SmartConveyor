@@ -15,6 +15,7 @@
 /* ======Control Type===== */
 #define SHIFT_ControlType 20
 #define BIT_MASK_ControlType (0x07 << SHIFT_ControlType)
+#define VALUE_CONV_GET_PALLET_STATUS 0x05
 #define VALUE_ELEV_STATION1_LOGIC_THREAD 0x03
 #define VALUE_ELEV_KEY_SENSOR 0x00
 
@@ -113,6 +114,7 @@ typedef enum
 	EVT_KEY = 2,
 	EVT_BUZZER = 3,
 	EVT_CYLINDER = 4,
+	EVT_GetPalletStatus = 5,
 	EVT_EVENTTYPE_ERROR = 15,
 }EventType;
 

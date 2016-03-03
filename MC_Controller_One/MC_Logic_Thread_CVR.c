@@ -383,9 +383,11 @@ void CVR_normalCmdParser(void *aPContext, unsigned int *payload32)
 			break;
 		case VALUE_CONVEYOR_MOVE_BOT_FORWARD :
 			ConveyorMotorMove(CONV_MOTOR5);
+			/*
 			evtPayload32 = CVR_eventPayloadFormat(payload32);
 			result = CVR_publishEvent(aPContext, evtPayload32);	
 			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+			*/
 			break;
 		case VALUE_CONVEYOR_MOVE_BOT_REVERSE :
 			break;
@@ -640,11 +642,30 @@ unsigned int getInitPalletStatus()
 	return position;
 }
 
+unsigned int CVR_getPalletStatsusEventPayloadFormat(unsigned int *aMsg32)
+{		
+	unsigned int computePosition = getInitPalletStatus();
+	unsigned int computeSID = ((*aMsg32 & BIT_MASK_SEQUENCE_ID) >> SHIFT_SEQUENCE_ID);
+
+	unsigned int NA = 0 << SHIFT_NA;
+	unsigned int eventPosition = computePosition << SHIFT_POSITION;
+	unsigned int NA_offset_7 = 0 << SHIFT_ACTION_DONE;
+	unsigned int eventType = EVT_GetPalletStatus << SHIFT_EVENT_TYPE;
+	unsigned int sid = computeSID << SHIFT_SID;
+	unsigned int eventModuleID = MUDULE_ID << SHIFT_MODULE_ID;
+	unsigned int moduleType = VALUE_MODULE_CONVEYOR_TYPE << SHIFT_MODULE_TYPE;		
+	unsigned int eventPayload32 = moduleType | eventModuleID |sid | eventType | NA_offset_7 | eventPosition |NA;
+	printf("CVR_getPalletStatsusEventPayloadFormat : eventPayload32 = 0x%08x\n", eventPayload32);
+
+	return eventPayload32;
+}
+
 void CVR_MC_CMD_Dispatch_Thread(void *pContext)
 {
 	printf("MC_CMD_Dispatch_Thread_CVR+++\n");
 	char buffer[CMD_BUFFER_SIZE]; 
 	MC_Context_Struct *pMcContext = (MC_Context_Struct *)pContext;
+	
 	struct mqttMsg
 	{
 		char *topicName;
@@ -657,10 +678,12 @@ void CVR_MC_CMD_Dispatch_Thread(void *pContext)
 		int i;
 		
         /* receive the message */
-		printf("Msg Recieved in MC_CMD_Dispatch_Thread\n");
+		printf("\n\n");
         bytes_read = mq_receive(pMcContext->mqueueServerArray[MQUEUE_RECEIVER_THREAD_NUM], buffer, MAX_SIZE, NULL);
 		if(bytes_read != sizeof(msg))
 			printf("MC_CMD_Dispatch_Thread : ERROR : mq_receive Failed, bytes_read = %d\n", bytes_read);
+		printf("====Msg Recieved in MC_CMD_Dispatch_Thread_Conveyor====\n");
+		// copy structure from source mq_send
 		memcpy(&msg, buffer, sizeof(msg));
 		
 		if(CVR_checkTopic(msg.topicName, SUBSCRIBE_TOPIC_FROM_SCC_INIT))
@@ -681,9 +704,10 @@ void CVR_MC_CMD_Dispatch_Thread(void *pContext)
 				printf("ERROR : payloadlen error\n");
 				return;
 			}
-			int compute = ((*payload32 & BIT_MASK_MODE) >> SHIFT_MODE);
-			printf("compute = %d\n", compute);
-			switch(compute)
+			
+			int computeMode = ((*payload32 & BIT_MASK_MODE) >> SHIFT_MODE);
+			int computeControlType = ((*payload32 & BIT_MASK_ControlType) >> SHIFT_ControlType);
+			switch(computeMode)
 			{
 				case VALUE_MODE_DIAG : 
 					pMcContext->mode = 1;
@@ -693,13 +717,21 @@ void CVR_MC_CMD_Dispatch_Thread(void *pContext)
 				case VALUE_MODE_NORMAL : 
 					pMcContext->mode = 0;
 					printf("Here is NORMAL Mode\n");
-					CVR_DispatchNormal(msg.message->payload, pMcContext);
+					// normal command, return initial pallet status
+					if(computeControlType==VALUE_CONV_GET_PALLET_STATUS)
+						CVR_getPalletStatsusEventPayloadFormat(payload32);
+					else
+						CVR_DispatchNormal(msg.message->payload, pMcContext);
 					break;
 				default : 
 					break;
 			}
 		}
+/*
 		memcpy(buffer, msg.message->payload, msg.message->payloadlen);
+		for(i=3; i>=0; i--)		
+			printf("msg.payload = 0x%02x\n",buffer[i]);
+*/
 
 	}while(!pMcContext -> bThread_exit[6]);
 	printf("MC_CMD_Dispatch_Thread_CVR---\n");	

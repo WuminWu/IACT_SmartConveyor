@@ -123,8 +123,6 @@ int main (int argc, char* argv[])
 			return -1;
 	#endif	
 	}
-	
-	printf("pallet status = 0x%08x\n", getInitPalletStatus());
 
 	// create threads
 	MC_CreateCmdReceiverServerThread( &g_mc_context, fnServerThreadList,  g_mc_context.maxThreadNum);

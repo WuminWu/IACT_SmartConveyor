@@ -559,5 +559,16 @@ namespace MqttClient_HMI
             byte[] Msg2 = new byte[] { (byte)0x00, (byte)0x86, (byte)0x11, (byte)0x00 };
             ushort publishMsg2 = client.Publish(PUBLISH_MC_CONV2, Msg2);
         }
+
+        private void button61_Click(object sender, EventArgs e)
+        {
+            byte[] Msg = new byte[] { (byte)0x00, (byte)0x16, (byte)0x11, (byte)0x00 };
+            ushort publishMsg = client.Publish(PUBLISH_MC_CONV2, Msg);
+
+            Thread.Sleep(500);
+
+            byte[] Msg2 = new byte[] { (byte)0x00, (byte)0x02, (byte)0x34, (byte)0x00 };
+            ushort publishMsg2 = client.Publish(PUBLISH_MC_ELEV2, Msg2);
+        }
     }
 }
