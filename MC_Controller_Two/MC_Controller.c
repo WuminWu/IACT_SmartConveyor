@@ -37,6 +37,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
 		printf("msgarrvd : ERROR : mq_send Failed\n");
 	else if(result == 0)
 		printf("mq_send Success\n");
+	printf("=================== New Command Incoming ===================\n");
 	printf("msgarrvd : topic = %s\t\t payload = 0x%08x\n", msg.topicName,*((unsigned int*)msg.message->payload));
 	MQTTClient_freeMessage(&message);
 	MQTTClient_free(topicName);

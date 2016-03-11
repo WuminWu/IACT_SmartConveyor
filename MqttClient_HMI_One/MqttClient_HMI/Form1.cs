@@ -158,7 +158,8 @@ namespace MqttClient_HMI
         private void button_PosThree_Cylinder_On(object sender, EventArgs e)
         {
             // Position Cylinder 3 On
-            byte[] Msg = new byte[] { (byte)0x00, (byte)0x20, (byte)0x21, (byte)0x80 };
+            //byte[] Msg = new byte[] { (byte)0x00, (byte)0x20, (byte)0x21, (byte)0x80 };
+            byte[] Msg = new byte[] { (byte)0x00, (byte)0x20, (byte)0x21, (byte)0x00 };
             ushort publishMsg = client.Publish(PUBLISH_MC_CONV_IP, Msg);
             Console.WriteLine("publish = " + publishMsg);
         }
@@ -585,6 +586,35 @@ namespace MqttClient_HMI
             byte[] Msg4 = new byte[] { (byte)0x00, (byte)0x00, (byte)0x50, (byte)0x00 };
             ushort publishMsg4 = client.Publish(PUBLISH_MC_ELEV2_IP, Msg4);
 
+        }
+
+        private void button62_Click(object sender, EventArgs e)
+        {
+            // Position Cylinder 1 On
+            byte[] Msg = new byte[] { (byte)0x00, (byte)0x80, (byte)0x21, (byte)0x00 };
+            ushort publishMsg = client.Publish(PUBLISH_MC_CONV_IP, Msg);
+            Console.WriteLine("publish = " + publishMsg);
+
+            Thread.Sleep(20);
+
+            // Position Cylinder 2 On
+            byte[] Msg2 = new byte[] { (byte)0x00, (byte)0x40, (byte)0x21, (byte)0x00 };
+            ushort publishMsg2 = client.Publish(PUBLISH_MC_CONV_IP, Msg2);
+            Console.WriteLine("publish = " + publishMsg2);
+
+            Thread.Sleep(20);
+
+            // Position Cylinder 3 On
+            //byte[] Msg = new byte[] { (byte)0x00, (byte)0x20, (byte)0x21, (byte)0x80 };
+            byte[] Msg3 = new byte[] { (byte)0x00, (byte)0x20, (byte)0x21, (byte)0x00 };
+            ushort publishMsg3 = client.Publish(PUBLISH_MC_CONV_IP, Msg3);
+            Console.WriteLine("publish = " + publishMsg3);
+
+            Thread.Sleep(20);
+
+            byte[] Msg4 = new byte[] { (byte)0x00, (byte)0x10, (byte)0x21, (byte)0x00 };
+            ushort publishMsg4 = client.Publish(PUBLISH_MC_CONV_IP, Msg4);
+            Console.WriteLine("publish = " + publishMsg4);
         }
     }
 }

@@ -197,16 +197,27 @@ void button4_event1(void)
 	rbpCylinderFn(4,&cyl_swt);	
 }
 
-void init_InterruptSensor_1(void (*pf)(void))
+void init_InterruptSensor(void (*pf)(void), int sensorID)
 {
-	printf("init_InterruptSensor_1\n");
-	wiringPiISR (CONV_SENSOR1, INT_EDGE_RISING, pf);
+	printf("init_InterruptSensor\n");
+	if(sensorID==CONV_SENSOR1)
+		wiringPiISR (CONV_SENSOR1, INT_EDGE_RISING, pf);
+	else if(sensorID==CONV_SENSOR13)
+		wiringPiISR (CONV_SENSOR13, INT_EDGE_RISING, pf);
+	else
+		printf("ERROR: init_InterruptSensor wrong Sensor ID\n");
 }
 
-void deinit_InterruptSensor_1(void (*pf)(void))
+
+void deinit_InterruptSensor(void (*pf)(void), int sensorID)
 {
-	printf("deinit_InterruptSensor_1\n");
-	wiringPiISR (CONV_SENSOR1, INT_EDGE_SETUP, pf);
+	printf("deinit_InterruptSensor\n");
+	if(sensorID==CONV_SENSOR1)
+		wiringPiISR (CONV_SENSOR1, INT_EDGE_SETUP, pf);
+	else if(sensorID==CONV_SENSOR13)
+		wiringPiISR (CONV_SENSOR13, INT_EDGE_SETUP, pf);
+	else
+		printf("ERROR: deinit_InterruptSensor wrong Sensor ID\n");
 }
 
 int init_Conveyer()
@@ -274,7 +285,7 @@ int init_Conveyer()
 
 	mode = MODE_CONV;
 	//Wumin : Bot Conveyor interrupt stop
-	wiringPiISR (CONV_SENSOR13, INT_EDGE_RISING, &cbConvSensor_13);
+	//wiringPiISR (CONV_SENSOR13, INT_EDGE_RISING, &cbConvSensor_13);
 	
 	// David's button call back
 	wiringPiISR (CONV_BUTTON1, INT_EDGE_FALLING, &BTN_1_Interrupt) ;
@@ -390,29 +401,29 @@ int init_Elevator()
 
 void rbpMotor(int nPin)
 {
-	static int convMotorStillFlag[4] = {0, 0, 0, 0};
-	convMotor nPin2 = CONV_NONE;
-	if(nPin == CONV_MOTOR1 && dir == FORWARD){
+	//static int convMotorStillFlag[4] = {0, 0, 0, 0};
+	int convMotorStillFlag[4] = {0, 0, 0, 0};
+	convMotor nPin2;
+	if(nPin == CONV_MOTOR1){
 		nPin2 = CONV_MOTOR2;
 		convMotorStillFlag[0]++;
 		convMotorStillFlag[1]++; // motor 2's flag
 	}
 	
-	if(nPin == CONV_MOTOR2 && dir == FORWARD){
+	if(nPin == CONV_MOTOR2){
 		nPin2 = CONV_MOTOR3;
 		convMotorStillFlag[1]++;
 		convMotorStillFlag[2]++; 
 	}
 				
-	if(nPin == CONV_MOTOR3 && dir == FORWARD){
+	if(nPin == CONV_MOTOR3){
 		nPin2 = CONV_MOTOR4;
 		convMotorStillFlag[2]++;
 		convMotorStillFlag[3]++; 
 	}
 	
-	if(nPin == CONV_MOTOR4 && dir == FORWARD){
+	if(nPin == CONV_MOTOR4){
 		nPin2 = CONV_NONE;
-		//convMotorStillFlag[2]++;
 		convMotorStillFlag[3]++; 
 	}	
 	
@@ -424,19 +435,26 @@ void rbpMotor(int nPin)
 	delay(3020);
 	
 	int index = nPin;
-	printf("convMotorStillFlag = %d\n",convMotorStillFlag[index]);
 	if(convMotorStillFlag[index] > 0){
 		if(convMotorStillFlag[index]==1)
 			set_PWM_OFF_PCA9685( i2c_pwm , nPin , 0x0000 );	
+		else
+			printf("ERROR : Motor nPin didn't stop, and nPin = %d\t convMotorStillFlag[index] = %d\n"
+					, nPin, convMotorStillFlag[index]);
 		convMotorStillFlag[index]--;
 	}
 	int index2 = nPin2;
-	if(convMotorStillFlag[index2] > 0){
-		if(convMotorStillFlag[index2]==1)
-			set_PWM_OFF_PCA9685( i2c_pwm , nPin2 , 0x0000 );
-		convMotorStillFlag[index2]--;
+	if(index2!=CONV_NONE)
+	{	
+		if(convMotorStillFlag[index2] > 0){
+			if(convMotorStillFlag[index2]==1)
+				set_PWM_OFF_PCA9685( i2c_pwm , nPin2 , 0x0000 );
+			else
+				printf("ERROR : Motor nPin2 didn't stop, and nPin2 = %d\t convMotorStillFlag[index2] = %d\n"
+						, nPin2, convMotorStillFlag[index2]);		
+			convMotorStillFlag[index2]--;
+		}
 	}
-
 }
 
 void rbpMotorDirection(int state)
@@ -669,8 +687,7 @@ void ConveyorMotorStop(int nPin)
 
 void ElevatorMotorMove(int nPin, int ELEV_MOTOR_DIR, int dir)
 {
-	//digitalWrite (ELEV_MOTOR_DIR, dir) ;	
-	digitalWrite (ELEV_MOTOR_DIR3, DOWN) ;	
+	digitalWrite (ELEV_MOTOR_DIR, dir) ;	
 	set_PWM_OFF_PCA9685( i2c_pwm , nPin , 0x0800 );
 }
 

@@ -148,33 +148,41 @@ void ELV_normalCmdParser(void *aPContext, unsigned int *payload32)
 	switch(computeTypeAndAction)
 	{
 		case VALUE_ELEV_UP:
-			rbpElevator_UpDown(UP);
-			printf("rbpSensorRead(ELEV_SEN_ELE_H) = %d\n", rbpSensorRead(ELEV_SEN_ELE_H));
-			while(1)
+			if(!rbpSensorRead(ELEV_SEN_RAIL_F))
 			{
-				if(rbpSensorRead(ELEV_SEN_ELE_H))
+				printf("Normal Mode : VALUE_ELEV_UP\n");
+				rbpElevator_UpDown(UP);
+				while(1)
 				{
-					evtPayload32 = ELV_eventPayloadFormat(payload32);
-					result = ELV_publishEvent(aPContext, evtPayload32);	
-					printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
-					break;
+					if(rbpSensorRead(ELEV_SEN_ELE_H))
+					{
+						evtPayload32 = ELV_eventPayloadFormat(payload32);
+						result = ELV_publishEvent(aPContext, evtPayload32);	
+						printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+						break;
+					}
 				}
-			}
-			break;
+			}else
+				printf("\nERROR: Pallet is STUCK\n");
+		break;
 		case VALUE_ELEV_DOWN:
-			rbpElevator_UpDown(DOWN);
-			printf("rbpSensorRead(ELEV_SEN_ELE_L) = %d\n", rbpSensorRead(ELEV_SEN_ELE_L));
-			while(1)
+			if(!rbpSensorRead(ELEV_SEN_RAIL_F))
 			{
-				if(rbpSensorRead(ELEV_SEN_ELE_L))
+				printf("Normal Mode : VALUE_ELEV_DOWN\n");
+				rbpElevator_UpDown(DOWN);
+				while(1)
 				{
-					evtPayload32 = ELV_eventPayloadFormat(payload32);
-					result = ELV_publishEvent(aPContext, evtPayload32);	
-					printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
-					break;
+					if(rbpSensorRead(ELEV_SEN_ELE_L))
+					{
+						evtPayload32 = ELV_eventPayloadFormat(payload32);
+						result = ELV_publishEvent(aPContext, evtPayload32);	
+						printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
+						break;
+					}
 				}
-			}
-			break;
+			}else
+				printf("\nERROR: Pallet is STUCK\n");
+		break;
 		case VALUE_ELEV_TOP_MOTOR_FORWARD:		
 			break;
 		case VALUE_ELEV_TOP_MOTOR_REVERSE:
@@ -182,20 +190,20 @@ void ELV_normalCmdParser(void *aPContext, unsigned int *payload32)
 		case VALUE_ELEV_TOP_MOTOR_STOP:
 			break;
 		case VALUE_ELEV_BOT_MOTOR_FORWARD:
-			printf("Here is VALUE_ELEV_BOT_MOTOR_FORWARD\n");
+			printf("Normal Mode : VALUE_ELEV_BOT_MOTOR_FORWARD\n");
 			ElevatorMotorMove(ELEV_MOTOR2, ELEV_MOTOR_DIR2, FORWARD);
 			// Motor stop when time's up
-			delay(6000);
+			delay(8000);
 			evtPayload32 = ELV_eventPayloadFormat(payload32);
 			result = ELV_publishEvent(aPContext, evtPayload32);	
 			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);
 			ElevatorMotorStop(ELEV_MOTOR2);
 			break;
 		case VALUE_ELEV_BOT_MOTOR_REVERSE:
-			printf("Here is VALUE_ELEV_BOT_MOTOR_REVERSE\n");
+			printf("Normal Mode : VALUE_ELEV_BOT_MOTOR_REVERSE\n");
 			ElevatorMotorMove(ELEV_MOTOR2, ELEV_MOTOR_DIR2, BACKWARD);
 			// Motor stop when time's up
-			delay(6000);
+			delay(8000);
 			evtPayload32 = ELV_eventPayloadFormat(payload32);
 			result = ELV_publishEvent(aPContext, evtPayload32);	
 			printf("evtPayload32 = 0x%08x, and result = %d\n", evtPayload32, result);	
@@ -304,8 +312,23 @@ void ELV_MC_Sensor_Key_Detected_Thread(void *pContext )
 
 unsigned int ELV_getInitPalletStatus()
 {
-	unsigned int position = (rbpSensorRead(ELEV_SENSOR2)<<0) ;
-	return position;
+	unsigned int palletStatus = rbpSensorRead(ELEV_SENSOR2);
+	unsigned int elevPositionUp = rbpSensorRead(ELEV_SEN_ELE_H);
+	unsigned int elevPositionDown = rbpSensorRead(ELEV_SEN_ELE_L);
+	if(palletStatus)
+	{
+		if(elevPositionUp)
+			return 0x02;
+		else if(elevPositionDown)
+			return 0x03;
+	}
+	else if(palletStatus==0)
+	{
+		if(elevPositionUp)
+			return 0x00;
+		else if(elevPositionDown)
+			return 0x01;
+	}
 }
 
 unsigned int ELV_getPalletStatsusEventPayloadFormat(unsigned int *aMsg32)
@@ -319,7 +342,7 @@ unsigned int ELV_getPalletStatsusEventPayloadFormat(unsigned int *aMsg32)
 	unsigned int eventType = EVT_GetPalletStatus << SHIFT_EVENT_TYPE;
 	unsigned int sid = computeSID << SHIFT_SID;
 	unsigned int eventModuleID = MUDULE_ID << SHIFT_MODULE_ID;
-	unsigned int moduleType = VALUE_MODULE_CONVEYOR_TYPE << SHIFT_MODULE_TYPE;		
+	unsigned int moduleType = VALUE_MODULE_ELEVATOR_TYPE << SHIFT_MODULE_TYPE;		
 	unsigned int eventPayload32 = moduleType | eventModuleID |sid | eventType | NA_offset_7 | eventPosition |NA;
 	printf("CVR_getPalletStatsusEventPayloadFormat : eventPayload32 = 0x%08x\n", eventPayload32);
 
@@ -348,7 +371,7 @@ void ELV_MC_CMD_Dispatch_Thread(void *pContext)
         bytes_read = mq_receive(pMcContext->mqueueServerArray[MQUEUE_RECEIVER_THREAD_NUM], buffer, MAX_SIZE, NULL);
 		if(bytes_read != sizeof(msg))
 			printf("MC_CMD_Dispatch_Thread : ERROR : mq_receive Failed, bytes_read = %d\n", bytes_read);
-		printf("====Msg Recieved in MC_CMD_Dispatch_Thread_ELV====\n");
+
 		// copy structure from source mq_send
 		memcpy(&msg, buffer, sizeof(msg));
 		
@@ -381,7 +404,12 @@ void ELV_MC_CMD_Dispatch_Thread(void *pContext)
 					pMcContext->mode = 0;
 					printf("Here is Normal Mode\n");
 					if(computeControlType==VALUE_CONV_GET_PALLET_STATUS)
-						ELV_getPalletStatsusEventPayloadFormat(payload32);
+					{
+						unsigned int eventPayload = ELV_getPalletStatsusEventPayloadFormat(payload32);
+						int result = ELV_publishEvent(pContext, eventPayload);
+						if(result==0)
+							printf("Publish VALUE_CONV_GET_PALLET_STATUS Success\n");
+					}
 					else
 						ELV_DispatchThread(msg.message->payload, pMcContext);
 					break;

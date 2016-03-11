@@ -21,7 +21,7 @@
 		"/COV_Position4_CmdQueue",
 		"/COV_Position5_CmdQueue",
 		"/COV_Button_CmdQueue",
-		"/COV_CMD_Dispatch"
+		"/COV2_CMD_Dispatch"
 	};
 #endif	
 

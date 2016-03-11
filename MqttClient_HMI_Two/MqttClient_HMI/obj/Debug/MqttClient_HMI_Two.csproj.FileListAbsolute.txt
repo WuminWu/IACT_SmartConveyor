@@ -6,3 +6,4 @@ C:\Users\21313534\Desktop\MqttClient_HMI_Two\MqttClient_HMI\obj\Debug\MqttClient
 C:\Users\21313534\Desktop\MqttClient_HMI_Two\MqttClient_HMI\obj\Debug\MqttClient_HMI_Two.csproj.GenerateResource.Cache
 C:\Users\21313534\Desktop\MqttClient_HMI_Two\MqttClient_HMI\obj\Debug\MqttClient_HMI.exe
 C:\Users\21313534\Desktop\MqttClient_HMI_Two\MqttClient_HMI\obj\Debug\MqttClient_HMI.pdb
+C:\Users\21313534\Desktop\MqttClient_HMI_Two\MqttClient_HMI\obj\Debug\MqttClient_HMI_Two.csprojResolveAssemblyReference.cache
