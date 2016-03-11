@@ -48,6 +48,7 @@ typedef struct
 	int mode;                                     // Normal = 0, Diag = 1
 	char moduleType;
 	int maxThreadNum;
+	char *ipType;
 }MC_Context_Struct;
 
 typedef void (*MC_CMD_RECEIVER_SERVER_FNP)( void *pContext );

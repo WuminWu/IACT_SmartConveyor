@@ -69,6 +69,11 @@ int main (int argc, char* argv[])
 			g_mc_context.maxThreadNum = ELV_MAX_THREAD_NUM;
 		}
 	#endif
+	//create initial ipTyepe:(IP,Type)
+	g_mc_context.ipType = (char *)malloc(20);
+	strcpy(g_mc_context.ipType, SUBSCRIBE_TOPIC_SELF_IP);
+	strcat(g_mc_context.ipType, ",");
+	strcat(g_mc_context.ipType, &(g_mc_context.moduleType));	
 	
 	int i;
 	MQTTClient client;

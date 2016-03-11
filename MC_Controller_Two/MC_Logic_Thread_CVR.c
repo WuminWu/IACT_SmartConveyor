@@ -740,7 +740,7 @@ void CVR_MC_CMD_Dispatch_Thread(void *pContext)
 		if(CVR_checkTopic(msg.topicName, SUBSCRIBE_TOPIC_FROM_SCC_INIT))
 		{
 			printf("MC_CMD_Dispatch_Thread : mq_receive : Topic = %s\n", msg.topicName);
-			char *ip = "192.168.1.13,C";
+			char *ip = pMcContext->ipType;
 			int rc = publishMsg(*(pMcContext->pClient), PUBLISH_TOPIC_INIT, ip, strlen(ip));
 			if(rc==0)
 				printf("INIT : publishMsg Success from %s\n", ip);

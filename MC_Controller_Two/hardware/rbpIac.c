@@ -10,7 +10,7 @@
 
 int i2c_ext, i2c_pwm;
 int fd;
-int mode, delay_time = 4000, sleep_time = 4;
+int mode, delay_time = 4000;
 static int dir = FORWARD;
 static pthread_mutex_t pinMutex ;
 static volatile int    pinPass = -1 ;
@@ -401,60 +401,37 @@ int init_Elevator()
 
 void rbpMotor(int nPin)
 {
-	//static int convMotorStillFlag[4] = {0, 0, 0, 0};
-	int convMotorStillFlag[4] = {0, 0, 0, 0};
 	convMotor nPin2;
-	if(nPin == CONV_MOTOR1){
+	
+	if(nPin==CONV_MOTOR1)
 		nPin2 = CONV_MOTOR2;
-		convMotorStillFlag[0]++;
-		convMotorStillFlag[1]++; // motor 2's flag
-	}
-	
-	if(nPin == CONV_MOTOR2){
+	else if(nPin==CONV_MOTOR2)
 		nPin2 = CONV_MOTOR3;
-		convMotorStillFlag[1]++;
-		convMotorStillFlag[2]++; 
-	}
-				
-	if(nPin == CONV_MOTOR3){
+	else if(nPin==CONV_MOTOR3)
 		nPin2 = CONV_MOTOR4;
-		convMotorStillFlag[2]++;
-		convMotorStillFlag[3]++; 
-	}
-	
-	if(nPin == CONV_MOTOR4){
+	else if(nPin==CONV_MOTOR4)	
 		nPin2 = CONV_NONE;
-		convMotorStillFlag[3]++; 
-	}	
-	
+		
 	set_PWM_ON_PCA9685( i2c_pwm , nPin , 0x0 );
 	set_PWM_OFF_PCA9685( i2c_pwm , nPin , 0x0800 );
+	printf("\nWumin : Motor%d On\n",nPin+1 );
 	
 	delay(1000);
-	set_PWM_OFF_PCA9685( i2c_pwm , nPin2 , 0x0800 );	
+	if(nPin2!=CONV_NONE)
+	{
+		set_PWM_OFF_PCA9685( i2c_pwm , nPin2 , 0x0800 );
+		printf("\nWumin : Motor%d On\n",nPin2+1 );
+	}
 	delay(3020);
 	
-	int index = nPin;
-	if(convMotorStillFlag[index] > 0){
-		if(convMotorStillFlag[index]==1)
-			set_PWM_OFF_PCA9685( i2c_pwm , nPin , 0x0000 );	
-		else
-			printf("ERROR : Motor nPin didn't stop, and nPin = %d\t convMotorStillFlag[index] = %d\n"
-					, nPin, convMotorStillFlag[index]);
-		convMotorStillFlag[index]--;
+	set_PWM_OFF_PCA9685( i2c_pwm , nPin , 0x0000 );	
+	printf("\nWumin : Motor%d Off\n",nPin+1 );
+	if(nPin2!=CONV_NONE)
+	{
+		set_PWM_OFF_PCA9685( i2c_pwm , nPin2 , 0x0000 );
+		printf("\nWumin : Motor%d Off\n",nPin2+1 );
 	}
-	int index2 = nPin2;
-	if(index2!=CONV_NONE)
-	{	
-		if(convMotorStillFlag[index2] > 0){
-			if(convMotorStillFlag[index2]==1)
-				set_PWM_OFF_PCA9685( i2c_pwm , nPin2 , 0x0000 );
-			else
-				printf("ERROR : Motor nPin2 didn't stop, and nPin2 = %d\t convMotorStillFlag[index2] = %d\n"
-						, nPin2, convMotorStillFlag[index2]);		
-			convMotorStillFlag[index2]--;
-		}
-	}
+	
 }
 
 void rbpMotorDirection(int state)

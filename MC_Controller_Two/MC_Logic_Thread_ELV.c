@@ -39,7 +39,9 @@ unsigned int ELV_eventPayloadFormat(unsigned int *aMsg32)
 	
 	unsigned int computeTypeAndAction = ((*aMsg32 & BIT_MASK_ControlType_Action) >> SHIFT_ControlType_Action);
 	unsigned int computeSID = ((*aMsg32 & BIT_MASK_SEQUENCE_ID) >> SHIFT_SEQUENCE_ID);
-
+	//show log sequence ID
+	printf("Wumin : sid = %d\n", computeSID);
+	
 	switch(computeTypeAndAction)
 	{
 		case VALUE_ELEV_TOP_MOTOR_FORWARD:
@@ -379,9 +381,12 @@ void ELV_MC_CMD_Dispatch_Thread(void *pContext)
 		if(ELV_checkTopic(msg.topicName, SUBSCRIBE_TOPIC_FROM_SCC_INIT))
 		{
 			printf("MC_CMD_Dispatch_Thread : mq_receive : Topic = %s\n", msg.topicName);
-			char *ip = "192.168.1.14,E";
+			char *ip = pMcContext->ipType;
 			int rc = publishMsg(*(pMcContext->pClient), PUBLISH_TOPIC_INIT, ip, strlen(ip));
-			printf("INIT : rc = %d\n", rc);
+			if(rc==0)
+				printf("INIT : publishMsg Success from %s\n", ip);
+			else
+				printf("INIT : publishMsg FAILEDfrom %s\n", ip);
 		}
 		else if(ELV_checkTopic(msg.topicName, SUBSCRIBE_TOPIC_SELF_IP))
 		{
